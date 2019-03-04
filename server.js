@@ -132,7 +132,11 @@ const checkAuthentication = (req, res, next) => {
   console.log('checking authentication');
   if (req.isAuthenticated()) {
     console.log('isauth');
-    res.redirect(`/login/${req.params.app}/${req.params.provider}`);
+    res.redirect(
+      `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? req.params.app : ''
+      }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
+    );
   } else {
     console.log(`is not auth'd`);
     // not auth'd, choose provider
@@ -168,8 +172,9 @@ app.get('/login/:app/:provider', (req, res, next) => {
   if (req.isAuthenticated()) {
     console.log(`isauth, app=${req.params.app}, provider:${req.params.provider}`);
     res.redirect(
-      `http://${process.env.SESSION_DOMAIN ? req.params.app : ''}${process.env.SESSION_DOMAIN ||
-        `localhost:${testClientPort[req.params.app]}`}`
+      `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? req.params.app : ''
+      }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
     );
   } else {
     console.log(`is not auth'd, try logging in, app=${req.params.app}, provider:${req.params.provider}`);
