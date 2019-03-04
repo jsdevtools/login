@@ -63,25 +63,6 @@ ptTransport.on('error', err => logger && logger.error(err));
 
 ptTransport.on('connect', message => logger && logger.info(message));
 
-// Configure Passport authenticated session persistence.
-//
-// In order to restore authentication state across HTTP requests, Passport needs
-// to serialize users into and deserialize users out of the session.  In a
-// production-quality application, this would typically be as simple as
-// supplying the user ID when serializing, and querying the user record by ID
-// from the database when deserializing.  However, due to the fact that this
-// example does not have a database, the complete Facebook profile is serialized
-// and deserialized.
-passport.serializeUser((user, cb) => {
-  // console.log('serializing', user);
-  cb(null, user);
-});
-
-passport.deserializeUser((obj, cb) => {
-  // console.log('deserializing', obj);
-  cb(null, obj);
-});
-
 const app = express();
 
 app.set('port', process.env.PORT || 3000);
@@ -103,6 +84,26 @@ app.use(
 // session.
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Configure Passport authenticated session persistence.
+//
+// In order to restore authentication state across HTTP requests, Passport needs
+// to serialize users into and deserialize users out of the session.  In a
+// production-quality application, this would typically be as simple as
+// supplying the user ID when serializing, and querying the user record by ID
+// from the database when deserializing.  However, due to the fact that this
+// example does not have a database, the complete Facebook profile is serialized
+// and deserialized.
+passport.serializeUser((user, cb) => {
+  // console.log('serializing', user);
+  cb(null, user);
+});
+
+passport.deserializeUser((obj, cb) => {
+  // console.log('deserializing', obj);
+  cb(null, obj);
+});
+
 require('./providers/pass-google').setup(passport, app, db.users);
 require('./providers/pass-github').setup(passport, app, db.users);
 
