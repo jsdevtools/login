@@ -174,7 +174,11 @@ app.get('/login/:app/:provider', (req, res, next) => {
   } else {
     console.log(`is not auth'd, try logging in, app=${req.params.app}, provider:${req.params.provider}`);
     passport.authenticate(req.params.provider, {
-      callbackURL: `http://localhost:3000/login/${req.params.app}/${req.params.provider}/return`,
+      callbackURL: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? 'login' : ''
+      }${process.env.SESSION_DOMAIN || 'localhost:3000'}/login/${req.params.app}/${
+        req.params.provider
+      }/return`,
     })(req, res, next);
   }
 });
@@ -184,12 +188,17 @@ app.get(
   (req, res, next) =>
     passport.authenticate(req.params.provider, {
       failureRedirect: '/login',
-      callbackURL: `http://localhost:3000/login/${req.params.app}/${req.params.provider}/return`,
+      callbackURL: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? 'login' : ''
+      }${process.env.SESSION_DOMAIN || 'localhost:3000'}/login/${req.params.app}/${
+        req.params.provider
+      }/return`,
     })(req, res, next),
   (req, res) =>
     res.redirect(
-      `http://${process.env.SESSION_DOMAIN ? req.params.app : ''}${process.env.SESSION_DOMAIN ||
-        `localhost:${testClientPort[req.params.app]}`}`
+      `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? req.params.app : ''
+      }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
     )
 );
 
