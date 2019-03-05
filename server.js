@@ -192,7 +192,7 @@ app.get('/login/:app/:provider', (req, res, next) => {
   }
 });
 
-app.param('/login/:app/:provider/return', (req, res) => {
+app.get('/login/:app/:provider/return', (req, res) => {
   const redirect = `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
     process.env.SESSION_DOMAIN ? req.params.app : ''
   }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`;
