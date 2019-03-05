@@ -192,6 +192,15 @@ app.get('/login/:app/:provider', (req, res, next) => {
   }
 });
 
+app.param('/login/:app/:provider/return', (req, res) => {
+  const redirect = `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+    process.env.SESSION_DOMAIN ? req.params.app : ''
+  }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`;
+  logger.info(`lapr ${redirect}`);
+  return res.redirect(redirect);
+});
+
+/*
 app.get(
   '/login/:app/:provider/return',
   (req, res, next) => {
@@ -212,6 +221,7 @@ app.get(
     return res.redirect(redirect);
   }
 );
+*/
 
 /*
   / - page with links to apps to log into
