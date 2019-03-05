@@ -137,16 +137,16 @@ if (app.get('env') === 'development') {
 }
 
 const checkAuthentication = (req, res, next) => {
-  console.log('checking authentication');
+  logger.info(`checking authentication`);
   if (req.isAuthenticated()) {
-    console.log('isauth');
+    logger.info(`isauth`);
     res.redirect(
       `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
         process.env.SESSION_DOMAIN ? req.params.app : ''
       }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
     );
   } else {
-    console.log(`is not auth'd`);
+    logger.info(`is not auth'd`);
     // not auth'd, choose provider
     next();
   }
@@ -176,16 +176,16 @@ app.get('/login/:app', checkAuthentication, (req, res) => {
     fail -> /login/:app
 */
 app.get('/login/:app/:provider', (req, res, next) => {
-  console.log('checking authentication');
+  logger.info('checking authentication');
   if (req.isAuthenticated()) {
-    console.log(`isauth, app=${req.params.app}, provider:${req.params.provider}`);
+    logger.info(`isauth, app=${req.params.app}, provider:${req.params.provider}`);
     res.redirect(
       `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
         process.env.SESSION_DOMAIN ? req.params.app : ''
       }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
     );
   } else {
-    console.log(`is not auth'd, try logging in, app=${req.params.app}, provider:${req.params.provider}`);
+    logger.info(`is not auth'd, try logging in, app=${req.params.app}, provider:${req.params.provider}`);
     passport.authenticate(req.params.provider, {
       callbackURL: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
         process.env.SESSION_DOMAIN ? 'login' : ''
@@ -243,8 +243,8 @@ app.get(
     auth'd or not: - choose app
       myapp1, myapp2 -> /login/:app
 */
-app.get('*', (_req, res, _next) => {
-  // console.log('req', _req);
+app.get('*', (req, res, _next) => {
+  logger.info(`* req ${JSON.stringify(req)}`);
   res.send(`
     <html>
       <body>
