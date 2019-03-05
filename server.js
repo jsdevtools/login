@@ -72,19 +72,20 @@ app.use(require('morgan')('combined', { stream: logger.stream }));
 // app.use(require('cookie-parser')());
 app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(
-  require('cookie-session')({
-    domain: process.env.SESSION_DOMAIN || undefined,
-    samesite: false,
+  require('express-session')({
+    cookie: {
+      domain: process.env.SESSION_DOMAIN || undefined,
+      samesite: false,
+      secure: false,
+    },
     secret: 'keyboard cat',
     resave: true,
     saveUninitialized: true,
   })
 );
 
-// Initialize Passport and restore authentication state, if any, from the
-// session.
-app.use(passport.initialize());
-app.use(passport.session());
+require('./providers/pass-google').setup(passport, app, db.users);
+require('./providers/pass-github').setup(passport, app, db.users);
 
 // Configure Passport authenticated session persistence.
 //
@@ -96,17 +97,19 @@ app.use(passport.session());
 // example does not have a database, the complete Facebook profile is serialized
 // and deserialized.
 passport.serializeUser((user, cb) => {
-  // console.log('serializing', user);
+  console.log('serializing', user);
   cb(null, user);
 });
 
 passport.deserializeUser((obj, cb) => {
-  // console.log('deserializing', obj);
+  console.log('deserializing', obj);
   cb(null, obj);
 });
 
-require('./providers/pass-google').setup(passport, app, db.users);
-require('./providers/pass-github').setup(passport, app, db.users);
+// Initialize Passport and restore authentication state, if any, from the
+// session.
+app.use(passport.initialize());
+app.use(passport.session());
 
 if (app.get('env') === 'development') {
   // development error handler
