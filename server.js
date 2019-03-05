@@ -97,12 +97,12 @@ require('./providers/pass-github').setup(passport, app, db.users);
 // example does not have a database, the complete Facebook profile is serialized
 // and deserialized.
 passport.serializeUser((user, cb) => {
-  console.log('serializing', user);
+  logger.info(`serializing ${user}`);
   cb(null, user);
 });
 
 passport.deserializeUser((obj, cb) => {
-  console.log('deserializing', obj);
+  logger.info(`deserializing ${obj}`);
   cb(null, obj);
 });
 
