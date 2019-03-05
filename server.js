@@ -72,11 +72,9 @@ app.use(require('morgan')('combined', { stream: logger.stream }));
 // app.use(require('cookie-parser')());
 app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(
-  require('express-session')({
-    cookie: {
-      domain: process.env.SESSION_DOMAIN || undefined,
-      samesite: false,
-    },
+  require('cookie-session')({
+    domain: process.env.SESSION_DOMAIN || undefined,
+    samesite: false,
     secret: 'keyboard cat',
     resave: true,
     saveUninitialized: true,
@@ -194,7 +192,6 @@ app.get('/login/:app/:provider', (req, res, next) => {
 
 app.get(
   '/login/:app/:provider/return',
-  /*
   (req, res, next) =>
     passport.authenticate(req.params.provider, {
       failureRedirect: '/login',
@@ -204,7 +201,6 @@ app.get(
         req.params.provider
       }/return`,
     })(req, res, next),
-  */
   (req, res) =>
     res.redirect(
       `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
