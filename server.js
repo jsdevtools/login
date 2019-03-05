@@ -73,7 +73,7 @@ ptTransport.on('connect', message => logger && logger.info(message));
 // example does not have a database, the complete Facebook profile is serialized
 // and deserialized.
 passport.serializeUser((user, cb) => {
-  logger.info(`serializing ${user}`);
+  logger.info(`serializing ${JSON.stringify(user)}`);
   cb(null, user);
 });
 
