@@ -192,36 +192,26 @@ app.get('/login/:app/:provider', (req, res, next) => {
   }
 });
 
-app.get('/login/:app/:provider/return', (req, res) => {
-  const redirect = `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
-    process.env.SESSION_DOMAIN ? req.params.app : ''
-  }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`;
-  logger.info(`lapr ${redirect}`);
-  return res.redirect(redirect);
-});
-
-/*
 app.get(
   '/login/:app/:provider/return',
-  (req, res, next) => {
-    const callbackURL = `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
-      process.env.SESSION_DOMAIN ? 'login' : ''
-    }${process.env.SESSION_DOMAIN || 'localhost:3000'}/login/${req.params.app}/${req.params.provider}/return`;
-    logger.info(`/login/:app/:provider/return ${callbackURL}`);
-    return passport.authenticate(req.params.provider, {
+  /*
+  (req, res, next) =>
+    passport.authenticate(req.params.provider, {
       failureRedirect: '/login',
-      callbackURL,
-    })(req, res, next);
-  },
-  (req, res) => {
-    const redirect = `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
-      process.env.SESSION_DOMAIN ? req.params.app : ''
-    }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`;
-    logger.info(`lapr ${redirect}`);
-    return res.redirect(redirect);
-  }
+      callbackURL: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? 'login' : ''
+      }${process.env.SESSION_DOMAIN || 'localhost:3000'}/login/${req.params.app}/${
+        req.params.provider
+      }/return`,
+    })(req, res, next),
+  */
+  (req, res) =>
+    res.redirect(
+      `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? req.params.app : ''
+      }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
+    )
 );
-*/
 
 /*
   / - page with links to apps to log into
