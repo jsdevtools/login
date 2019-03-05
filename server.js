@@ -205,12 +205,35 @@ app.get(
       }/return`,
     })(req, res, next),
   (req, res) =>
+    req.session.save(() =>
+      res.redirect(
+        `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+          process.env.SESSION_DOMAIN ? req.params.app : ''
+        }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
+      )
+    )
+);
+
+/*
+app.get(
+  '/login/:app/:provider/return',
+  (req, res, next) =>
+    passport.authenticate(req.params.provider, {
+      failureRedirect: '/login',
+      callbackURL: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+        process.env.SESSION_DOMAIN ? 'login' : ''
+      }${process.env.SESSION_DOMAIN || 'localhost:3000'}/login/${req.params.app}/${
+        req.params.provider
+      }/return`,
+    })(req, res, next),
+  (req, res) =>
     res.redirect(
       `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
         process.env.SESSION_DOMAIN ? req.params.app : ''
       }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
     )
 );
+*/
 
 /*
   / - page with links to apps to log into
