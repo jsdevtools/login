@@ -75,8 +75,8 @@ app.use(
   require('express-session')({
     domain: process.env.SESSION_DOMAIN || undefined,
     secret: 'keyboard cat',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
   })
 );
 
