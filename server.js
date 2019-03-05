@@ -63,30 +63,6 @@ ptTransport.on('error', err => logger && logger.error(err));
 
 ptTransport.on('connect', message => logger && logger.info(message));
 
-const app = express();
-
-app.set('port', process.env.PORT || 3000);
-app.use(express.static(`${__dirname}/build`));
-
-app.use(require('morgan')('combined', { stream: logger.stream }));
-// app.use(require('cookie-parser')());
-app.use(require('body-parser').urlencoded({ extended: true }));
-app.use(
-  require('express-session')({
-    cookie: {
-      domain: process.env.SESSION_DOMAIN || undefined,
-      samesite: false,
-      secure: false,
-    },
-    secret: 'keyboard cat',
-    resave: true,
-    saveUninitialized: true,
-  })
-);
-
-require('./providers/pass-google').setup(passport, app, db.users);
-require('./providers/pass-github').setup(passport, app, db.users);
-
 // Configure Passport authenticated session persistence.
 //
 // In order to restore authentication state across HTTP requests, Passport needs
@@ -106,10 +82,36 @@ passport.deserializeUser((obj, cb) => {
   cb(null, obj);
 });
 
+const app = express();
+
+app.set('port', process.env.PORT || 3000);
+app.use(express.static(`${__dirname}/build`));
+
+app.use(require('morgan')('combined', { stream: logger.stream }));
+app.use(require('cookie-parser')());
+app.use(require('body-parser').urlencoded({ extended: true }));
+app.use(
+  require('express-session')({
+    cookie: {
+      domain: process.env.SESSION_DOMAIN || undefined,
+      sameSite: false,
+      secure: false,
+    },
+    secret: 'keyboard cat',
+    resave: true,
+    saveUninitialized: true,
+  })
+);
+
+app.set('trust proxy', 1);
+
 // Initialize Passport and restore authentication state, if any, from the
 // session.
 app.use(passport.initialize());
 app.use(passport.session());
+
+require('./providers/pass-google').setup(passport, app, db.users);
+require('./providers/pass-github').setup(passport, app, db.users);
 
 if (app.get('env') === 'development') {
   // development error handler
