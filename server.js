@@ -2,12 +2,13 @@ require('dotenv').load();
 const express = require('express');
 const passport = require('passport');
 const session = require('express-session');
+const cors = require('cors');
 const RedisStore = require('connect-redis')(session);
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const winston = require('winston');
-const { Papertrail } = require('winston-papertrail');
+
+const { logger } = require('./logger');
 
 const testClientPort = {
   client1: '3001',
@@ -18,7 +19,6 @@ const db = {
   users: {
     newUser: (userInfo, onSuccess, onFailure) => {
       try {
-        // db.users.push(userInfo);
         onSuccess(userInfo);
       } catch (err) {
         onFailure(err);
@@ -26,47 +26,6 @@ const db = {
     },
   },
 };
-
-const ptTransport = new Papertrail({
-  host: process.env.PAPERTRAIL_URL,
-  port: process.env.PAPERTRAIL_PORT,
-  logFormat: (level, message) => {
-    return `[${level}] ${message}`;
-  },
-  timestamp: true,
-  hostname: process.env.PAPERTRAIL_HOSTNAME,
-  program: process.env.APPNAME,
-});
-const consoleLogger = new winston.transports.Console({
-  level: process.env.LOG_LEVEL,
-  timestamp() {
-    return new Date().toString();
-  },
-  colorize: true,
-});
-
-// monkey pach papertrail to remove meta from log() args
-const { log } = ptTransport;
-// eslint-disable-next-line func-names
-ptTransport.log = function(level, msg, meta, callback) {
-  const cb = callback === undefined ? meta : callback;
-  return log.apply(this, [level, msg, cb]);
-};
-
-// eslint-disable-next-line new-cap
-const logger = new winston.createLogger({
-  transports: [ptTransport, consoleLogger],
-});
-
-logger.stream = {
-  write: (message, _encoding) => {
-    logger.info(message);
-  },
-};
-
-ptTransport.on('error', err => logger && logger.error(err));
-
-ptTransport.on('connect', message => logger && logger.info(message));
 
 // Configure Passport authenticated session persistence.
 //
@@ -90,7 +49,6 @@ passport.deserializeUser((obj, cb) => {
 const app = express();
 
 app.set('port', process.env.PORT || 3000);
-app.use(express.static(`${__dirname}/build`));
 
 app.use(morgan('combined', { stream: logger.stream }));
 app.use(cookieParser());
@@ -122,6 +80,7 @@ app.use(passport.session());
 
 require('./providers/pass-google').setup(passport, app, db.users);
 require('./providers/pass-github').setup(passport, app, db.users);
+require('./providers/pass-local').setup(passport, app, db.users);
 
 if (app.get('env') === 'development') {
   // development error handler
@@ -132,6 +91,10 @@ if (app.get('env') === 'development') {
       status: 'error',
       message: err,
     });
+  });
+  app.use((req, res, next) => {
+    console.log(`urlIt: ${req.url}`);
+    next();
   });
 } else {
   // production error handler
@@ -144,6 +107,8 @@ if (app.get('env') === 'development') {
     });
   });
 }
+
+app.use(cors());
 
 const checkAuthentication = (req, res, next) => {
   logger.info(`checking authentication`);
@@ -161,6 +126,12 @@ const checkAuthentication = (req, res, next) => {
   }
 };
 
+app.get('/logout', (req, res) => {
+  console.log('>> /logout');
+  if (req.session !== undefined) req.session.destroy();
+  res.redirect('/');
+});
+
 /*
   /login/:app - choose login provider
     auth'd: -> go to /login/:app/:provider
@@ -168,23 +139,55 @@ const checkAuthentication = (req, res, next) => {
       login, google, facebook -> then go to /login/:app/:provider
 */
 app.get('/login/:app', checkAuthentication, (req, res) => {
+  console.log('/login/:app');
+  // Redirects back to app if authenticated. If not, prompt for authentication method.
   res.send(`
     <html>
       <body>
-        Hello! ${req.params.app}. Choose provider.<br />
+      <h1>Login</h1>
+        Hello! Choose provider to log into ${req.params.app}.<br />
         <a href="/login/${req.params.app}/github">Github</a><br />
-        <a href="/login/${req.params.app}/google">Google</a>
+        <a href="/login/${req.params.app}/google">Google</a><br />
+        <h3>Local</h3>
+        <form action='/login/${req.params.app}/local' method='post'>
+          <div>
+            <label for='email'>Email:</label><br/>
+            <input type='text' name='email' id='email' require>
+          </div>
+          <br/>
+          <div>
+            <label for='pass'>Password:(8 characters minimum)</label><br/>
+            <input type='password' name='password' id='pass' minlength='8' required>
+          </div>
+          <br/>
+          <input type='submit' value='Login'><br/>
+        </form>
       </body>
     </html>
   `);
 });
 
+app.post('/login/:app/local', (req, res, next) => {
+  console.log('post /login/:app/local');
+  passport.authenticate('local', {
+    successRedirect: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
+      process.env.SESSION_DOMAIN ? req.params.app : ''
+    }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`,
+    failureRedirect: `/login/${req.params.app}`,
+    passReqToCallback: true,
+    session: true,
+  })(req, res, next);
+});
+
 /*
-  /login/:app/:provider - login
-    success -> app.jsdevtools.com
-    fail -> /login/:app
+ /login/:app/:provider - login
+ success -> app.jsdevtools.com
+ fail -> /login/:app
 */
 app.get('/login/:app/:provider', (req, res, next) => {
+  console.log('get /login/:app/:provider');
+  // if authenticagted, redirect back to app. If not, then authenticate.
+  // successful authentication ==> /login/app/provider/return
   logger.info('checking authentication');
   if (req.isAuthenticated()) {
     logger.info(`isauth, app=${req.params.app}, provider:${req.params.provider}`);
@@ -227,33 +230,12 @@ app.get(
 );
 
 /*
-app.get(
-  '/login/:app/:provider/return',
-  (req, res, next) =>
-    passport.authenticate(req.params.provider, {
-      failureRedirect: '/login',
-      callbackURL: `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
-        process.env.SESSION_DOMAIN ? 'login' : ''
-      }${process.env.SESSION_DOMAIN || 'localhost:3000'}/login/${req.params.app}/${
-        req.params.provider
-      }/return`,
-    })(req, res, next),
-  (req, res) =>
-    res.redirect(
-      `${process.env.SESSION_DOMAIN ? 'https' : 'http'}://${
-        process.env.SESSION_DOMAIN ? req.params.app : ''
-      }${process.env.SESSION_DOMAIN || `localhost:${testClientPort[req.params.app]}`}`
-    )
-);
-*/
-
-/*
   / - page with links to apps to log into
     auth'd or not: - choose app
       myapp1, myapp2 -> /login/:app
 */
 app.get('*', (req, res, _next) => {
-  logger.info(`* req ${JSON.stringify(req)}`);
+  console.log('get *');
   res.send(`
     <html>
       <body>

@@ -1,6 +1,6 @@
 const GithubStrategy = require('passport-github').Strategy;
 
-function setup(passport, app, users) {
+const setup = (passport, _app, users) => {
   passport.use(
     new GithubStrategy(
       {
@@ -33,7 +33,7 @@ function setup(passport, app, users) {
       }
     )
   );
-}
+};
 
 module.exports = {
   setup,
